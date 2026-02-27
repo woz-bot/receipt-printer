@@ -15,7 +15,7 @@ This project lets Woz send you physical notes on your receipt printer. It runs a
 
 ## Hardware Requirements
 
-- Receipt printer (ESC/POS compatible)
+- **Printer:** Ribao 80mm POS thermal receipt printer (ESC/POS compatible)
 - Computer on your home network (Mac/Linux/Windows)
 - Printer connected via USB or network
 
