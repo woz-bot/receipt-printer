@@ -6,6 +6,7 @@ Enable anyone to send messages to your receipt printer via email at **hi@print.s
 
 ✅ **Rate limiting**: 3 prints per person per day
 ✅ **Content moderation**: Automatic filtering of inappropriate content  
+✅ **Image printing**: Attach photos (auto-dithered for thermal printing)
 ✅ **Auto-replies**: Senders get confirmation emails
 ✅ **Secure**: Webhook signature verification
 
@@ -215,6 +216,19 @@ Body:
 - Bread
 - Coffee
 ```
+
+**With images:**
+Attach any image (JPG, PNG, GIF) to your email. The system will:
+1. Automatically resize to fit printer width (576px / 80mm)
+2. Convert to grayscale
+3. Apply Floyd-Steinberg dithering for clean thermal printing
+4. Print with your message
+
+**Tips for best image results:**
+- High contrast images work best
+- Photos with clear subjects print better than busy backgrounds
+- Logos and line art look great
+- Max file size: 5MB per image
 
 ---
 

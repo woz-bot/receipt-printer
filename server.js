@@ -2,6 +2,7 @@ const express = require('express');
 const escpos = require('escpos');
 const { Resend } = require('resend');
 const emailHandler = require('./email-handler');
+const imageProcessor = require('./image-processor');
 
 // Depending on connection type:
 // escpos.USB = require('escpos-usb');     // For USB
@@ -127,7 +128,7 @@ app.post('/webhook/email', async (req, res) => {
     return res.json({ received: true });
   }
   
-  const { from, subject, text, html } = event.data;
+  const { from, subject, text, html, email_id } = event.data;
   const senderEmail = from.email || from;
   
   console.log(`📧 Email received from: ${senderEmail}`);
@@ -171,6 +172,26 @@ app.post('/webhook/email', async (req, res) => {
     return res.json({ received: true, printed: false, reason: 'content_filtered' });
   }
   
+  // Fetch attachments if any
+  let images = [];
+  if (resend && email_id) {
+    try {
+      const fullEmail = await resend.emails.get(email_id);
+      if (fullEmail.attachments && fullEmail.attachments.length > 0) {
+        // Process image attachments
+        for (const attachment of fullEmail.attachments) {
+          if (attachment.content_type?.startsWith('image/')) {
+            const imageBuffer = Buffer.from(attachment.content, 'base64');
+            const processedImage = await imageProcessor.processImageForPrinting(imageBuffer);
+            images.push(processedImage);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching attachments:', error);
+    }
+  }
+  
   // Print the message
   try {
     const device = PRINTER_TYPE === 'network' 
@@ -185,7 +206,7 @@ app.post('/webhook/email', async (req, res) => {
       
       const printer = new escpos.Printer(device);
       
-      // Print the message
+      // Print header
       printer
         .font('a')
         .align('ct')
@@ -197,10 +218,24 @@ app.post('/webhook/email', async (req, res) => {
         .align('lt')
         .text('')
         .text(`From: ${senderEmail}`)
-        .text('')
-        .text(message)
-        .text('')
-        .text('')
+        .text('');
+      
+      // Print message text if present
+      if (message) {
+        printer.text(message).text('');
+      }
+      
+      // Print images if any
+      if (images.length > 0) {
+        printer.text('').align('ct');
+        for (const img of images) {
+          printer.image(img.bitmap, img.width, img.height);
+          printer.text('');
+        }
+      }
+      
+      // Print footer
+      printer
         .align('ct')
         .text('---')
         .text(new Date().toLocaleString())
@@ -208,7 +243,7 @@ app.post('/webhook/email', async (req, res) => {
         .cut()
         .close();
       
-      console.log(`✅ Printed email from ${senderEmail}`);
+      console.log(`✅ Printed email from ${senderEmail}${images.length > 0 ? ` with ${images.length} image(s)` : ''}`);
     });
     
     // Increment rate limit
@@ -216,11 +251,12 @@ app.post('/webhook/email', async (req, res) => {
     
     // Send confirmation email
     if (resend) {
+      const imageText = images.length > 0 ? ` with ${images.length} image${images.length > 1 ? 's' : ''}` : '';
       await resend.emails.send({
         from: 'Print Bot <hi@print.sillysoftware.club>',
         to: senderEmail,
         subject: '✅ Message printed!',
-        text: `Your message was printed successfully!\n\nYou have ${rateCheck.remaining - 1} prints remaining today.`
+        text: `Your message${imageText} was printed successfully!\n\nYou have ${rateCheck.remaining - 1} prints remaining today.\n\nTip: You can attach images to your emails and they'll be printed with dithering!`
       });
     }
     
