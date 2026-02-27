@@ -172,12 +172,30 @@ app.post('/webhook/email', async (req, res) => {
     return res.json({ received: true, printed: false, reason: 'content_filtered' });
   }
   
-  // Fetch attachments if any
+  // Fetch and validate attachments
   let images = [];
   if (resend && email_id) {
     try {
       const fullEmail = await resend.emails.get(email_id);
+      
+      // Validate images before processing
       if (fullEmail.attachments && fullEmail.attachments.length > 0) {
+        const imageValidation = emailHandler.validateImages(fullEmail.attachments);
+        
+        if (!imageValidation.allowed) {
+          console.log(`🚫 Images blocked: ${imageValidation.reason}`);
+          
+          // Send rejection email
+          await resend.emails.send({
+            from: 'Print Bot <hi@print.sillysoftware.club>',
+            to: senderEmail,
+            subject: 'Images not printed',
+            text: `Your message couldn't be printed: ${imageValidation.reason}\n\nLimits:\n- Max ${emailHandler.MAX_IMAGES_PER_EMAIL} images per email\n- Max ${emailHandler.MAX_IMAGE_SIZE_MB}MB per image\n\nPlease try again with smaller/fewer images!`
+          });
+          
+          return res.json({ received: true, printed: false, reason: 'images_too_large' });
+        }
+        
         // Process image attachments
         for (const attachment of fullEmail.attachments) {
           if (attachment.content_type?.startsWith('image/')) {

@@ -4,6 +4,12 @@ const crypto = require('crypto');
 const rateLimits = new Map();
 const RATE_LIMIT_PER_DAY = 3; // Max prints per sender per day
 
+// Content limits to prevent abuse
+const MAX_TEXT_LENGTH = 500; // Characters (shorter than before - prevents mile-long prints!)
+const MAX_IMAGES_PER_EMAIL = 2; // Images per email
+const MAX_IMAGE_SIZE_MB = 5; // MB per image
+const MAX_TOTAL_EMAIL_SIZE_MB = 10; // Total email size
+
 // Inappropriate content keywords (basic filter - could use AI moderation API)
 const BLOCKED_KEYWORDS = [
   // Add patterns for scary/inappropriate content
@@ -60,11 +66,53 @@ function moderateContent(text) {
     }
   }
   
-  // Check length (reasonable limit for receipt printer)
-  if (text.length > 1000) {
+  // Check length (prevent mile-long prints!)
+  if (text.length > MAX_TEXT_LENGTH) {
     return {
       allowed: false,
-      reason: 'Message too long (max 1000 characters)'
+      reason: `Message too long (max ${MAX_TEXT_LENGTH} characters)`
+    };
+  }
+  
+  return { allowed: true };
+}
+
+function validateImages(attachments) {
+  if (!attachments || attachments.length === 0) {
+    return { allowed: true };
+  }
+  
+  const imageAttachments = attachments.filter(a => 
+    a.content_type?.startsWith('image/')
+  );
+  
+  // Check number of images
+  if (imageAttachments.length > MAX_IMAGES_PER_EMAIL) {
+    return {
+      allowed: false,
+      reason: `Too many images (max ${MAX_IMAGES_PER_EMAIL} per email)`
+    };
+  }
+  
+  // Check individual image sizes
+  for (const img of imageAttachments) {
+    const sizeInMB = img.size / (1024 * 1024);
+    if (sizeInMB > MAX_IMAGE_SIZE_MB) {
+      return {
+        allowed: false,
+        reason: `Image too large (max ${MAX_IMAGE_SIZE_MB}MB per image)`
+      };
+    }
+  }
+  
+  // Check total size
+  const totalSize = imageAttachments.reduce((sum, img) => sum + img.size, 0);
+  const totalSizeMB = totalSize / (1024 * 1024);
+  
+  if (totalSizeMB > MAX_TOTAL_EMAIL_SIZE_MB) {
+    return {
+      allowed: false,
+      reason: `Total email too large (max ${MAX_TOTAL_EMAIL_SIZE_MB}MB)`
     };
   }
   
@@ -101,6 +149,10 @@ module.exports = {
   checkRateLimit,
   incrementRateLimit,
   moderateContent,
+  validateImages,
   verifyWebhookSignature,
-  RATE_LIMIT_PER_DAY
+  RATE_LIMIT_PER_DAY,
+  MAX_TEXT_LENGTH,
+  MAX_IMAGES_PER_EMAIL,
+  MAX_IMAGE_SIZE_MB
 };

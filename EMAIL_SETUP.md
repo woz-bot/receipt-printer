@@ -93,12 +93,21 @@ Each email address can send **3 prints per day**. If exceeded:
 - Sender receives "limit reached" email
 - Resets at midnight UTC
 
+### Content Limits
+
+To prevent abuse and mile-long prints:
+- **Text**: Max 500 characters per message
+- **Images**: Max 2 images per email
+- **Image size**: Max 5MB per image
+- **Total email size**: Max 10MB
+
+Violators receive an explanation email with the limits.
+
 ### Content Moderation
 
 Messages are automatically filtered for:
 - Inappropriate language
 - Scary/violent content
-- Messages over 1000 characters
 
 Blocked senders receive an explanation email.
 
@@ -114,6 +123,17 @@ Edit `email-handler.js`:
 
 ```javascript
 const RATE_LIMIT_PER_DAY = 5; // Change from 3 to 5
+```
+
+### Adjust Content Limits
+
+Edit the limits in `email-handler.js`:
+
+```javascript
+const MAX_TEXT_LENGTH = 500;         // Characters
+const MAX_IMAGES_PER_EMAIL = 2;      // Images per email
+const MAX_IMAGE_SIZE_MB = 5;         // MB per image
+const MAX_TOTAL_EMAIL_SIZE_MB = 10;  // Total email size
 ```
 
 ### Update Content Filter
