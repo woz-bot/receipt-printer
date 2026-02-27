@@ -16,6 +16,8 @@ This project lets Woz send you physical notes on your receipt printer. It runs a
 - **Token authentication** - Shared secret prevents unauthorized access
 - **Network isolation** - Server only accessible via your Tailnet
 - **Rate limiting** - Prevents spam/abuse
+- **Content moderation** - AI-powered filtering for text and images
+- **Image moderation** - GPT-4 Vision checks every image for inappropriate content
 
 ## Hardware Requirements
 

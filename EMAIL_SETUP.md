@@ -56,7 +56,29 @@ Name: print
 Value: v=spf1 include:_spf.resend.com ~all
 ```
 
-## Step 4: Restart Server
+## Step 4: Add OpenAI API Key (Image Moderation)
+
+**⚠️ Highly recommended for security!**
+
+1. Go to https://platform.openai.com/api-keys
+2. Create a new API key
+3. Add to `.env`:
+
+```bash
+OPENAI_API_KEY=sk-your_key_here
+```
+
+**What it does:**
+- Automatically checks every image for inappropriate content
+- Blocks images with: violence, gore, nudity, hate symbols, disturbing content
+- Uses GPT-4o-mini Vision to analyze images before printing
+
+**Without it:**
+- ⚠️ Images won't be moderated (security risk!)
+- Server will log a warning but continue to function
+- Text-only printing will still work fine
+
+## Step 5: Restart Server
 
 ```bash
 pm2 restart receipt-printer
@@ -71,7 +93,7 @@ curl http://localhost:3001/health
 # Should show email: true
 ```
 
-## Step 5: Send Test Email
+## Step 6: Send Test Email
 
 Email **hi@print.sillysoftware.club** with a message:
 
@@ -105,9 +127,16 @@ Violators receive an explanation email with the limits.
 
 ### Content Moderation
 
-Messages are automatically filtered for:
+**Text** is automatically filtered for:
 - Inappropriate language
 - Scary/violent content
+
+**Images** are moderated using AI (if OpenAI API key is configured):
+- Violence, gore, weapons
+- Nudity or sexual content
+- Hate symbols
+- Disturbing or graphic content
+- Visible inappropriate text in images
 
 Blocked senders receive an explanation email.
 

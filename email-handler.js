@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const fetch = require('node-fetch');
 
 // Simple in-memory rate limiting (use Redis in production for multiple instances)
 const rateLimits = new Map();
@@ -145,10 +146,85 @@ async function verifyWebhookSignature(req, secret) {
   return false;
 }
 
+async function moderateImage(imageBuffer) {
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  
+  if (!OPENAI_API_KEY) {
+    // No API key configured - skip moderation
+    // You could also make this fail-closed (reject all images without moderation)
+    console.warn('⚠️  No OPENAI_API_KEY - skipping image moderation');
+    return { allowed: true };
+  }
+  
+  try {
+    // Convert image to base64
+    const base64Image = imageBuffer.toString('base64');
+    const dataUrl = `data:image/jpeg;base64,${base64Image}`;
+    
+    // Use OpenAI Vision API to check content
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'Is this image appropriate for printing on a receipt printer that might be seen by anyone? Answer ONLY "safe" or "unsafe". Consider: violence, gore, nudity, hate symbols, disturbing content, inappropriate language visible in the image. Be strict.'
+              },
+              {
+                type: 'image_url',
+                image_url: { url: dataUrl }
+              }
+            ]
+          }
+        ],
+        max_tokens: 10
+      })
+    });
+    
+    if (!response.ok) {
+      console.error('OpenAI API error:', response.status);
+      // Fail open or fail closed? Let's fail closed (reject) for safety
+      return {
+        allowed: false,
+        reason: 'Unable to verify image safety'
+      };
+    }
+    
+    const result = await response.json();
+    const answer = result.choices[0].message.content.toLowerCase().trim();
+    
+    if (answer.includes('unsafe')) {
+      return {
+        allowed: false,
+        reason: 'Image contains inappropriate content'
+      };
+    }
+    
+    return { allowed: true };
+    
+  } catch (error) {
+    console.error('Error moderating image:', error);
+    // Fail closed for safety
+    return {
+      allowed: false,
+      reason: 'Unable to verify image safety'
+    };
+  }
+}
+
 module.exports = {
   checkRateLimit,
   incrementRateLimit,
   moderateContent,
+  moderateImage,
   validateImages,
   verifyWebhookSignature,
   RATE_LIMIT_PER_DAY,

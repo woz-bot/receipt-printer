@@ -200,6 +200,23 @@ app.post('/webhook/email', async (req, res) => {
         for (const attachment of fullEmail.attachments) {
           if (attachment.content_type?.startsWith('image/')) {
             const imageBuffer = Buffer.from(attachment.content, 'base64');
+            
+            // Moderate image content
+            const imageMod = await emailHandler.moderateImage(imageBuffer);
+            if (!imageMod.allowed) {
+              console.log(`🚫 Image blocked: ${imageMod.reason}`);
+              
+              // Send rejection email
+              await resend.emails.send({
+                from: 'Print Bot <hi@print.sillysoftware.club>',
+                to: senderEmail,
+                subject: 'Image not printed',
+                text: `Your image couldn't be printed: ${imageMod.reason}\n\nPlease only send appropriate, safe-for-work images.`
+              });
+              
+              return res.json({ received: true, printed: false, reason: 'image_content_filtered' });
+            }
+            
             const processedImage = await imageProcessor.processImageForPrinting(imageBuffer);
             images.push(processedImage);
           }
