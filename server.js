@@ -3,6 +3,7 @@ const escpos = require('escpos');
 const { Resend } = require('resend');
 const emailHandler = require('./email-handler');
 const imageProcessor = require('./image-processor');
+const textProcessor = require('./text-processor');
 
 // Depending on connection type:
 escpos.USB = require('escpos-usb');     // For USB
@@ -72,6 +73,10 @@ app.post('/print', authenticate, async (req, res) => {
   }
 
   try {
+    // Process text for special characters and emojis
+    const processedMessage = textProcessor.processText(message);
+    const processedFrom = textProcessor.processText(from);
+
     const device = PRINTER_TYPE === 'network'
       ? new escpos.Network(PRINTER_IP, PRINTER_PORT)
       : new escpos.USB();
@@ -84,18 +89,17 @@ app.post('/print', authenticate, async (req, res) => {
 
       const printer = new escpos.Printer(device);
 
-      // Print the message
+      // Print the message (using smaller font)
       printer
         .font('a')
         .align('ct')
         .style('bu')
-        .size(1, 1)
-        .text(`From: ${from}`)
+        .text(`From: ${processedFrom}`)
         .text('---')
         .style('normal')
         .align('lt')
         .text('')
-        .text(message)
+        .text(processedMessage)
         .text('')
         .text('')
         .align('ct')
@@ -104,7 +108,7 @@ app.post('/print', authenticate, async (req, res) => {
         .cut()
         .close();
 
-      console.log(`✅ Printed message from ${from}`);
+      console.log(`✅ Printed message from ${processedFrom}`);
       res.json({ success: true, message: 'Printed!' });
     });
 
@@ -255,6 +259,10 @@ app.post('/webhook/email', async (req, res) => {
 
   // Print the message
   try {
+    // Process text for special characters and emojis
+    const processedMessage = message ? textProcessor.processText(message) : '';
+    const processedEmail = textProcessor.processText(senderEmail);
+
     const device = PRINTER_TYPE === 'network'
       ? new escpos.Network(PRINTER_IP, PRINTER_PORT)
       : new escpos.USB();
@@ -267,23 +275,22 @@ app.post('/webhook/email', async (req, res) => {
 
       const printer = new escpos.Printer(device);
 
-      // Print header
+      // Print header (using smaller font)
       printer
         .font('a')
         .align('ct')
         .style('bu')
-        .size(1, 1)
         .text('New Message!')
         .text('---')
         .style('normal')
         .align('lt')
         .text('')
-        .text(`From: ${senderEmail}`)
+        .text(`From: ${processedEmail}`)
         .text('');
 
       // Print message text if present
-      if (message) {
-        printer.text(message).text('');
+      if (processedMessage) {
+        printer.text(processedMessage).text('');
       }
 
       // Print images if any
