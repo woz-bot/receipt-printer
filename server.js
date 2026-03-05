@@ -73,9 +73,9 @@ app.post('/print', authenticate, async (req, res) => {
   }
 
   try {
-    // Process text for special characters and emojis (64 chars for font 'b')
-    const processedMessage = textProcessor.processText(message, 64);
-    const processedFrom = textProcessor.processText(from, 64);
+    // Process text for special characters and emojis (120 chars for font 'b' size 0,0 on 80mm paper)
+    const processedMessage = textProcessor.processText(message, 120);
+    const processedFrom = textProcessor.processText(from, 120);
 
     const device = PRINTER_TYPE === 'network'
       ? new escpos.Network(PRINTER_IP, PRINTER_PORT)
@@ -260,9 +260,9 @@ app.post('/webhook/email', async (req, res) => {
 
   // Print the message
   try {
-    // Process text for special characters and emojis (64 chars for font 'b')
-    const processedMessage = message ? textProcessor.processText(message, 64) : '';
-    const processedEmail = textProcessor.processText(senderEmail, 64);
+    // Process text for special characters and emojis (120 chars for font 'b' size 0,0 on 80mm paper)
+    const processedMessage = message ? textProcessor.processText(message, 120) : '';
+    const processedEmail = textProcessor.processText(senderEmail, 120);
 
     const device = PRINTER_TYPE === 'network'
       ? new escpos.Network(PRINTER_IP, PRINTER_PORT)
