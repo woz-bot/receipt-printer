@@ -91,7 +91,7 @@ app.post('/print', authenticate, async (req, res) => {
 
       // Print the message (using smaller font)
       printer
-        .font('a')
+        .font('b')
         .align('ct')
         .style('bu')
         .text(`From: ${processedFrom}`)
@@ -277,7 +277,7 @@ app.post('/webhook/email', async (req, res) => {
 
       // Print header (using smaller font)
       printer
-        .font('a')
+        .font('b')
         .align('ct')
         .style('bu')
         .text('New Message!')
