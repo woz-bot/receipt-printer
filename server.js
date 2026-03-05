@@ -73,9 +73,9 @@ app.post('/print', authenticate, async (req, res) => {
   }
 
   try {
-    // Process text for special characters and emojis
-    const processedMessage = textProcessor.processText(message);
-    const processedFrom = textProcessor.processText(from);
+    // Process text for special characters and emojis (64 chars for font 'b')
+    const processedMessage = textProcessor.processText(message, 64);
+    const processedFrom = textProcessor.processText(from, 64);
 
     const device = PRINTER_TYPE === 'network'
       ? new escpos.Network(PRINTER_IP, PRINTER_PORT)
@@ -92,6 +92,7 @@ app.post('/print', authenticate, async (req, res) => {
       // Print the message (using smaller font)
       printer
         .font('b')
+        .size(0, 0)
         .align('ct')
         .style('bu')
         .text(`From: ${processedFrom}`)
@@ -259,9 +260,9 @@ app.post('/webhook/email', async (req, res) => {
 
   // Print the message
   try {
-    // Process text for special characters and emojis
-    const processedMessage = message ? textProcessor.processText(message) : '';
-    const processedEmail = textProcessor.processText(senderEmail);
+    // Process text for special characters and emojis (64 chars for font 'b')
+    const processedMessage = message ? textProcessor.processText(message, 64) : '';
+    const processedEmail = textProcessor.processText(senderEmail, 64);
 
     const device = PRINTER_TYPE === 'network'
       ? new escpos.Network(PRINTER_IP, PRINTER_PORT)
@@ -278,6 +279,7 @@ app.post('/webhook/email', async (req, res) => {
       // Print header (using smaller font)
       printer
         .font('b')
+        .size(0, 0)
         .align('ct')
         .style('bu')
         .text('New Message!')
