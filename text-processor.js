@@ -507,8 +507,59 @@ function fixSpecialChars(text) {
     .replace(/↓/g, 'v');
 }
 
+// Wrap text to fit printer width without breaking words
+function wrapText(text, maxWidth = 48) {
+  const lines = [];
+  const paragraphs = text.split('\n');
+  
+  for (const paragraph of paragraphs) {
+    if (paragraph.length === 0) {
+      lines.push('');
+      continue;
+    }
+    
+    const words = paragraph.split(' ');
+    let currentLine = '';
+    
+    for (const word of words) {
+      // If word itself is longer than maxWidth, we have to break it
+      if (word.length > maxWidth) {
+        if (currentLine) {
+          lines.push(currentLine.trim());
+          currentLine = '';
+        }
+        // Break long word across lines
+        for (let i = 0; i < word.length; i += maxWidth) {
+          lines.push(word.slice(i, i + maxWidth));
+        }
+        continue;
+      }
+      
+      // Check if adding this word would exceed width
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      
+      if (testLine.length > maxWidth) {
+        // Current line is full, push it and start new line with this word
+        if (currentLine) {
+          lines.push(currentLine.trim());
+        }
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    
+    // Push the last line of this paragraph
+    if (currentLine) {
+      lines.push(currentLine.trim());
+    }
+  }
+  
+  return lines.join('\n');
+}
+
 // Process text for thermal printing
-function processText(text) {
+function processText(text, wrapWidth = 48) {
   // First fix special characters
   let processed = fixSpecialChars(text);
   
@@ -518,11 +569,15 @@ function processText(text) {
   // Ensure it's safe ASCII
   processed = processed.replace(/[^\x00-\x7F]/g, '?');
   
+  // Apply word wrapping
+  processed = wrapText(processed, wrapWidth);
+  
   return processed;
 }
 
 module.exports = {
   processText,
   convertEmojis,
-  fixSpecialChars
+  fixSpecialChars,
+  wrapText
 };
