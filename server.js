@@ -73,9 +73,9 @@ app.post('/print', authenticate, async (req, res) => {
   }
 
   try {
-    // Process text for special characters and emojis (120 chars for font 'b' size 0,0 on 80mm paper)
-    const processedMessage = textProcessor.processText(message, 120);
-    const processedFrom = textProcessor.processText(from, 120);
+    // Process text for special characters and emojis (60 chars for font 'b' size 1,1 on 80mm paper)
+    const processedMessage = textProcessor.processText(message, 60);
+    const processedFrom = textProcessor.processText(from, 60);
 
     const device = PRINTER_TYPE === 'network'
       ? new escpos.Network(PRINTER_IP, PRINTER_PORT)
@@ -89,10 +89,10 @@ app.post('/print', authenticate, async (req, res) => {
 
       const printer = new escpos.Printer(device);
 
-      // Print the message (using smaller font)
+      // Print the message (using medium font)
       printer
         .font('b')
-        .size(0, 0)
+        .size(1, 1)
         .align('ct')
         .style('bu')
         .text(`From: ${processedFrom}`)
@@ -260,9 +260,9 @@ app.post('/webhook/email', async (req, res) => {
 
   // Print the message
   try {
-    // Process text for special characters and emojis (120 chars for font 'b' size 0,0 on 80mm paper)
-    const processedMessage = message ? textProcessor.processText(message, 120) : '';
-    const processedEmail = textProcessor.processText(senderEmail, 120);
+    // Process text for special characters and emojis (60 chars for font 'b' size 1,1 on 80mm paper)
+    const processedMessage = message ? textProcessor.processText(message, 60) : '';
+    const processedEmail = textProcessor.processText(senderEmail, 60);
 
     const device = PRINTER_TYPE === 'network'
       ? new escpos.Network(PRINTER_IP, PRINTER_PORT)
@@ -276,10 +276,10 @@ app.post('/webhook/email', async (req, res) => {
 
       const printer = new escpos.Printer(device);
 
-      // Print header (using smaller font)
+      // Print header (using medium font)
       printer
         .font('b')
-        .size(0, 0)
+        .size(1, 1)
         .align('ct')
         .style('bu')
         .text('New Message!')
